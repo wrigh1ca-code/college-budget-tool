@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budget Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday: a college student's money plan, confident and upbeat, never childish
+   IDEA a campus poster plus a student planner: a bold cobalt band announcing the tuition goal, then a planner of steps
+   PICTURE a huge lime progress ring for the tuition fund beside a month-by-month path of blocks filling toward the due date
+   COLOUR cobalt #2340ff leads in full-bleed bands, lime #c6f432 marks progress and money left, coral #ff4d2e only for a shortfall
+   TYPE Archivo expanded 800 for headlines and figures, Inter for the working parts
+   LAYOUT laptop: cobalt hero with ring left and path plus goal inputs right; budget band; steps left, sticky summary right. Phone: stacked in that order */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0b0d1f);--ink:light-dark(#0f1230,#eef0ff);--mut:light-dark(#555a7a,#a6abd0);--rule:light-dark(#e1e3f0,#272b55);--teal:light-dark(#2340ff,#8593ff);--panel:light-dark(#f2f4ff,#15183a);--red:light-dark(#e0351b,#ff7a63);--field:light-dark(#ffffff,#101331);--hero:light-dark(#2340ff,#1a2bcc);--lime:#c6f432;--limeink:#0f1230}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,52px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,.big{font-family:Archivo,"Arial Black",sans-serif;font-weight:800;font-stretch:115%;letter-spacing:-.02em;line-height:1.05;text-wrap:balance;margin:0}
+h1{font-size:clamp(32px,4.4vw,50px);max-width:24ch}
+h2{font-size:clamp(24px,2.8vw,32px);margin-bottom:10px}
+h3{font-size:17px;margin:0 0 8px;font-weight:600}
+p{margin:0 0 12px;max-width:68ch}
+.note{font-size:13px;color:var(--mut)}
+.lede{color:var(--mut);font-size:17px;margin:14px 0 0}
+.top{border-bottom:1px solid var(--rule)}
+.budget{margin-top:28px}
+.bb{position:relative;display:flex;height:64px;border-radius:4px;background:var(--panel)}
+.bb span{height:100%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;overflow:hidden;white-space:nowrap;border-right:2px solid var(--bg)}
+.bb .over{background:repeating-linear-gradient(135deg,var(--red) 0 6px,color-mix(in srgb,var(--red) 55%,var(--bg)) 6px 12px)}
+.bb .left{background:none;color:var(--teal);border:2px dashed var(--teal);border-radius:0 4px 4px 0}
+.bb .inc{position:absolute;top:-10px;bottom:-10px;border-left:3px solid var(--ink);width:0}
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mut);margin:16px 0 0}
+.keys i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(10em,1fr));gap:16px;margin-top:22px;border-top:1px solid var(--rule);padding-top:16px}
+.figs div b{display:block;font:800 clamp(24px,2.8vw,32px)/1.1 Archivo,"Arial Black",sans-serif;white-space:nowrap}
+.figs div span{font-size:13px;color:var(--mut)}
+.neg{color:var(--red)}.pos{color:var(--teal)}
+.grid{display:grid;gap:36px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:960px){.grid{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}.side{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow:auto;padding-right:4px}}
+.step{border-top:2px solid var(--ink);padding:16px 0 26px}
+.step>p{color:var(--mut);font-size:15px}
+.f{display:grid;grid-template-columns:minmax(0,1fr) 9em;gap:10px;align-items:center;margin-bottom:10px}
+.f label{font-size:15px}
+.f small{display:block;color:var(--mut);font-size:13px;line-height:1.35}
+.two{display:grid;gap:0 28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1100px){.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+input,select{font:16px Inter,sans-serif;color:var(--ink);background:var(--field);border:1px solid color-mix(in srgb,var(--ink) 30%,transparent);border-radius:6px;padding:8px 10px;width:100%;min-height:44px}
+input[type=number]{text-align:right;font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--teal);outline-offset:1px}
+.chk{display:flex;gap:10px;align-items:center;margin:4px 0 12px;font-size:15px}
+.chk input{width:22px;height:22px;min-height:0;accent-color:var(--teal)}
+.grp{margin:18px 0 6px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:1px solid var(--rule);padding-bottom:4px}
+.grp h3{margin:0;display:flex;align-items:center;gap:8px}
+.grp h3 i{width:12px;height:12px;border-radius:2px;display:inline-block}
+.grp b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.cat{display:grid;grid-template-columns:minmax(0,1fr) 8em 44px;gap:8px;align-items:center;margin:8px 0}
+.cat.fixed{grid-template-columns:minmax(0,1fr) 8em 44px;font-size:15px}
+.cat.fixed span:nth-child(2){text-align:right;padding-right:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.x{min-height:44px;border:0;background:none;color:var(--mut);font-size:22px;cursor:pointer;border-radius:6px}
+.x:hover{background:var(--panel);color:var(--red)}
+.add{border:0;background:none;color:var(--teal);font:600 15px Inter,sans-serif;min-height:40px;cursor:pointer;padding:0}
+.btn{font:600 15px Inter,sans-serif;min-height:44px;padding:8px 16px;border-radius:6px;border:1px solid var(--teal);background:var(--teal);color:var(--bg);cursor:pointer}
+.btn.ghost{background:none;color:var(--teal)}
+.tried{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.tried button{font:500 14px Inter,sans-serif;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:8px 12px;min-height:44px;cursor:pointer;text-align:left}
+.tried button[aria-pressed=true]{border-color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal)}
+.tried em{font-style:normal;display:block;font-size:13px;color:var(--mut)}
+.rows div{display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule);font-size:15px}
+.rows .m{height:10px;background:var(--panel);border-radius:2px;overflow:hidden}
+.rows .m span{display:block;height:100%}
+.rows div>b{font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.rows .tot{font-weight:600;border-bottom:2px solid var(--ink)}
+.cv{border-bottom:1px solid var(--rule);padding:4px 0}
+.cv .chk{margin:8px 0}
+.est{margin:0 0 12px 32px}
+.calc{text-align:right;padding-right:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.carin{margin-top:14px}
+.info{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;margin-top:12px;font-size:14px;line-height:1.5}
+.info>i{font:italic 700 14px/24px Georgia,serif;width:24px;height:24px;border-radius:50%;background:var(--teal);color:var(--bg);text-align:center}
+.info p{margin:0 0 6px}.info p:last-child{margin:0}
+.oc{display:grid;grid-template-columns:32px minmax(0,1fr) 8em 44px;gap:8px;align-items:center;margin:8px 0;font-size:15px}
+.oc input[type=checkbox]{width:22px;height:22px;min-height:0;accent-color:var(--teal)}
+.oc .amt{text-align:right;padding-right:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.oc.off .nm,.oc.off .amt,.oc.off input[type=text],.oc.off input[type=number]{opacity:.5;text-decoration:line-through}
+.oc .tag{font-size:12px;color:var(--teal);font-weight:600;margin-left:6px;text-decoration:none;opacity:1}
+.ochead{display:grid;grid-template-columns:32px minmax(0,1fr) 8em 44px;gap:8px;font-size:13px;color:var(--mut);border-bottom:1px solid var(--rule);padding-bottom:4px}
+@media(max-width:600px){.oc,.ochead{grid-template-columns:28px minmax(0,1fr) 6.5em 40px}}
+.nwgrid{display:grid;gap:8px 28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1100px){.nwgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.nwtot{display:flex;justify-content:space-between;gap:12px;border-top:2px solid var(--ink);padding-top:8px;font-weight:600}
+.nwtot b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.nwbig{display:grid;grid-template-columns:repeat(auto-fit,minmax(12em,1fr));gap:16px;margin:22px 0 4px;padding:16px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.nwbig b{display:block;font:800 clamp(24px,2.8vw,32px)/1.1 Archivo,"Arial Black",sans-serif;white-space:nowrap}
+.nwbig .big{font-size:clamp(36px,5vw,52px)}
+.tu .m{height:14px;background:var(--panel);border:1px solid var(--rule);border-radius:7px;overflow:hidden;margin-top:6px}
+.tu .m span{display:block;height:100%;background:var(--teal)}
+input[type=month]{text-align:left}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--rule);font-size:15px}
+.kv div span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+.kv .tot{font-weight:600;border-bottom:2px solid var(--ink)}
+.card{margin-top:26px}
+.fig{position:relative;min-height:200px;margin-top:8px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+svg text{font:13px Inter,sans-serif;fill:var(--mut);paint-order:stroke;stroke:var(--bg);stroke-width:4px}
+.ynab{background:var(--panel);border-top:1px solid var(--rule)}
+.cols{display:grid;gap:32px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:860px){.cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.ys{padding:12px 0;border-top:1px solid var(--rule)}
+pre{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:14px;font:14px/1.6 ui-monospace,Menlo,monospace;white-space:pre-wrap;margin:10px 0}
+table.map{border-collapse:collapse;width:100%}
+.map th,.map td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--rule);font-size:15px}
+.map th{font-weight:600;font-size:14px;color:var(--mut)}
+.map td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.bar{display:none}
+@media(max-width:959px){.bar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;justify-content:space-between;gap:12px;align-items:center;padding:10px 16px;background:var(--ink);color:var(--bg);font-size:15px}.bar b{font-size:18px;white-space:nowrap}body{padding-bottom:56px}}
+@media(max-width:600px){.bb{height:52px}.bb span{font-size:0}.f{grid-template-columns:minmax(0,1fr) 7.5em}.cat,.cat.fixed{grid-template-columns:minmax(0,1fr) 6.5em 40px}.rows div{grid-template-columns:minmax(0,7em) minmax(0,1fr) auto}}
+@media(prefers-reduced-motion:no-preference){.bb span,.rows .m span{transition:width .35s ease}}
+.bb{border-radius:14px;overflow:hidden;height:72px}
+.bb .inc{display:none}
+.bb .left{background:var(--bg);color:var(--teal);border:3px dashed var(--teal);border-radius:0 14px 14px 0}
+.btn{border-radius:999px;font-weight:700}
+input,select{border-radius:10px;border:2px solid var(--rule)}
+input:hover,select:hover{border-color:color-mix(in srgb,var(--teal) 45%,var(--rule))}
+.step{border-top:0;padding:24px;border-radius:20px;background:var(--panel);margin-bottom:20px}
+.step h2 .n{display:inline-grid;place-items:center;width:1.35em;height:1.35em;border-radius:50%;background:var(--teal);color:#fff;font-size:.8em;margin-right:10px;vertical-align:.08em}
+.card{background:var(--panel);border-radius:20px;padding:20px}
+.info{background:var(--bg);border-radius:14px}
+.tried button{border-radius:14px;background:var(--bg)}
+.rows .m{height:12px;border-radius:6px;background:var(--rule)}
+.rows .m span{border-radius:6px}
+.hero{background:var(--hero);color:#fff}
+.hero .brand{font:800 18px/1 Archivo,sans-serif;font-stretch:120%;display:flex;align-items:center;gap:10px;margin-bottom:clamp(20px,3vw,36px)}
+.hero .brand i{width:22px;height:22px;border-radius:6px;background:var(--lime);display:inline-block;transform:rotate(12deg)}
+.hero h1{color:#fff;font-size:clamp(32px,4.8vw,60px);max-width:27ch}
+.hero h1 em{font-style:normal;color:var(--lime)}
+.hero .lede{color:#dfe4ff;max-width:60ch}
+.hg{display:grid;gap:clamp(20px,4vw,48px);grid-template-columns:minmax(0,1fr);margin-top:clamp(20px,3vw,36px);align-items:start}
+@media(min-width:860px){.hg{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}}
+.ring{position:relative;max-width:min(320px,72vw);width:100%;margin:0 auto;aspect-ratio:1}
+.ring svg{width:100%;height:100%;display:block}
+.ring .c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .c b{font:800 clamp(48px,8vw,84px)/1 Archivo,sans-serif;font-stretch:115%;color:#fff}
+.ring .c span{font-size:15px;color:#dfe4ff;margin-top:6px}
+.path{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;height:150px}
+.path div{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.path .col{flex:1;width:100%;border-radius:10px;background:rgba(255,255,255,.14);position:relative;overflow:hidden}
+.path .col span{position:absolute;left:0;right:0;bottom:0;background:var(--lime);border-radius:10px}
+.path .col.now span{background:#fff}
+.path small{font-size:12px;color:#dfe4ff;white-space:nowrap}
+.path .due small{color:var(--lime);font-weight:700}
+.hstat{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px;border-radius:999px;padding:8px 16px;margin:18px 0 4px;background:var(--lime);color:var(--limeink)}
+.hstat.bad{background:#ff4d2e;color:#fff}
+.hfigs{display:grid;grid-template-columns:repeat(auto-fit,minmax(8em,1fr));gap:14px;margin-top:18px}
+.hfigs b{display:block;font:800 clamp(22px,2.6vw,30px)/1.1 Archivo,sans-serif;font-stretch:110%;color:#fff;white-space:nowrap}
+.hfigs span{font-size:13px;color:#dfe4ff}
+.hin{margin-top:22px;background:rgba(255,255,255,.1);border-radius:18px;padding:14px 18px 6px}
+.hin summary{cursor:pointer;font-weight:700;min-height:32px}
+.hin .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:12px}
+.hin .f{grid-template-columns:minmax(0,1fr);gap:6px;align-items:end;margin:0 0 10px}
+.hin .f small{display:none}
+.hin .f label{color:#fff;font-size:14px;line-height:1.3}.hin .f small{color:#dfe4ff}
+.hin input{background:#fff;color:#0f1230;border-color:transparent;color-scheme:light}
+.hin input:focus-visible{outline-color:var(--lime)}
+.top{border-bottom:0}
+#headline{font-size:clamp(28px,3.8vw,46px);max-width:24ch}
+.bar{background:var(--hero)!important;color:#fff!important}
+@media(max-width:600px){.path{height:120px;gap:4px}.path small{font-size:11px}.step{padding:18px 14px}.card{padding:16px}}
+@media(prefers-reduced-motion:no-preference){.path .col span{transition:height .4s ease}.ring .arc{transition:stroke-dashoffset .6s ease}}
+.step .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(13em,1fr));gap:4px 18px}
+.step .two .f{grid-template-columns:minmax(0,1fr);gap:6px;margin-bottom:12px}
+
+.chip{display:inline-block;font-weight:700;font-size:13px;border-radius:999px;padding:3px 12px;white-space:nowrap;justify-self:start}
+.chip.school{background:var(--hero);color:#fff}.chip.summer{background:#ffd23f;color:#0f1230}
+.sg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,9em) minmax(0,9em);gap:10px 12px;align-items:center;margin:6px 0 4px}
+.sg label{font-size:15px}.sg label small{display:block;color:var(--mut);font-size:13px;line-height:1.35}
+.seasons{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.seasons{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.sc{background:var(--panel);border-radius:20px;padding:18px 20px}
+.sch{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.sc .big{display:block;font-size:clamp(34px,4.4vw,48px)}
+.sc .bb{height:56px;margin-top:12px}
+.mini{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:10px;font-size:14px;color:var(--mut)}
+.mini b{color:var(--ink);font-weight:700}
+.cat{grid-template-columns:minmax(0,1fr) 6.5em 6.5em 44px!important}
+.cat.head{font-size:13px;color:var(--mut);margin:4px 0 0}
+.cat.fixed span[data-fse]{text-align:right;padding-right:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.grp b{font-size:14px}
+#groups div{grid-template-columns:minmax(0,1fr) 5.5em 5.5em}
+#groups div>span i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px}
+#groups .gh{border-bottom:0;padding-bottom:0}#groups .gh .chip{justify-self:end}
+.path .su .col{background:rgba(255,210,63,.32)}
+@media(max-width:600px){.sg{grid-template-columns:minmax(0,1fr) 6em 6em;gap:8px}.cat{grid-template-columns:minmax(0,1fr) 4.8em 4.8em 34px!important;gap:5px}.cat input{padding:8px 6px}.chip{font-size:12px;padding:3px 8px}}
+#income{display:block!important}
+#income>.f{max-width:24em;margin-top:8px}
+</style>
+</head>
+<body>
+<header class="band hero"><div class="wrap">
+<div class="brand"><i aria-hidden="true"></i>Budget Builder</div>
+<h1 id="tuhead">Your tuition goal</h1>
+<p class="lede" id="tusub"></p>
+<div class="hg">
+<div><div class="ring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="84" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="22"/><circle class="arc" id="arc" cx="100" cy="100" r="84" fill="none" stroke="var(--lime)" stroke-width="22" stroke-linecap="round" transform="rotate(-90 100 100)" stroke-dasharray="527.8" stroke-dashoffset="527.8"/></svg><div class="c"><b id="tupct">0%</b><span id="tusaved"></span></div></div>
+<div class="hfigs" id="tufigs" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div></div>
+<div>
+<div class="path" id="path" role="img" aria-label="Projected tuition savings each month until the due date"></div>
+<div id="hstat"></div>
+<details class="hin" open><summary>Edit your tuition goal</summary><div class="two" id="tuit" style="margin-top:12px"></div><p class="note" style="color:#dfe4ff;margin:0 0 10px">Money saved for tuition is part of your savings in step 5, but it isn't counted as cash for moving in.</p></details>
+</div>
+</div>
+</div></header>
+
+<section class="band top"><div class="wrap">
+<h2 id="headline">Building your budget…</h2>
+
+<p class="lede" id="sub"></p>
+<div class="budget">
+<div class="seasons" id="seasons"></div>
+<div class="keys" id="keys"></div>
+<div class="figs" id="figs"></div>
+</div>
+</div></section>
+
+<main class="band"><div class="wrap grid">
+<div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<p class="note" style="margin:0">The starting numbers are made-up examples. Replace them with your real numbers. Your changes are saved in this browser only.</p>
+<button class="btn ghost" id="reset" type="button">Start over with sample</button>
+</div>
+
+<section class="step"><h2><span class="n">1</span>Money coming in</h2><p>Your income usually changes between the school year and summer, when you can work more hours. Enter how many months each one lasts and what you take home in each.</p>
+<div class="two" id="income"></div>
+<h3 style="margin-top:18px">Transportation costs covered by assistance</h3><p class="note">Check each cost that's paid for you. If you uncheck one, it moves into your budget with an estimate you can change.</p><div id="cov"></div></section>
+
+<section class="step"><h2><span class="n">2</span>The apartment you're looking at</h2><p>Enter one place at a time. It fills in the Housing part of your budget, and its commute is used to estimate your driving costs. Save a place before trying another so you can switch back to it.</p>
+<div class="two" id="aptf"></div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:6px"><button class="btn" id="saveApt" type="button">Save this apartment</button><span class="note" id="savedMsg" aria-live="polite"></span></div>
+<h3 style="margin-top:18px">Apartments you've tried</h3>
+<div class="tried" id="tried"></div></section>
+
+<section class="step"><h2><span class="n">3</span>Build your monthly budget</h2><p>List everything you spend money on in a month, once for school months and once for summer. Some costs, like books, drop to zero in summer. Others, like fun money, may go up. Rename, add or remove lines to match your life. Housing comes from step 2, your tuition fund comes from your goal at the top, and car costs come from the checklist in step 1. For costs that come once or twice a year, like textbooks, divide the yearly total by 12.</p>
+<div id="cats"></div></section>
+
+<section class="step"><h2><span class="n">4</span>One-time costs to move in</h2><p>Check each cost you'll pay yourself. Uncheck anything your family is covering, and it drops out of your total. Your share of the deposit, fees and first month's rent comes from the apartment in step 2.</p>
+<div id="once"></div>
+</section>
+
+<section class="step"><h2><span class="n">5</span>Your net worth</h2><p>Your net worth is everything you own minus everything you owe. It's the simplest way to see your whole financial picture in one number. The cash in your checking and savings, minus what you've set aside for tuition, is what you'll use to pay for moving in.</p>
+<div class="nwgrid">
+<div><h3>What you own</h3><div id="assets"></div><div class="nwtot"><span>Total you own</span><b id="atot"></b></div></div>
+<div><h3>What you owe</h3><div id="debts"></div><div class="nwtot"><span>Total you owe</span><b id="dtot"></b></div></div>
+</div>
+<div class="nwbig"><div><span class="note">Your net worth</span><b id="nwval" class="big"></b></div><div><span class="note">Cash for moving in (checking + savings, minus tuition money)</span><b id="cashval"></b></div></div>
+<div class="info"><i aria-hidden="true">i</i><div><p><b>Why it matters:</b> your monthly budget shows whether you're spending less than you make. Net worth shows whether that's actually building something over time. If your net worth goes up every few months, your plan is working.</p><p>Update these numbers every three months or so, and write down the date and total. Only count a car if it's in your name, and use its private-party value from a site like Kelley Blue Book (kbb.com). In YNAB, you can add your car, investments and loans as tracking accounts to see your net worth there too.</p></div></div>
+</section>
+</div>
+
+<aside class="side" aria-label="Budget summary">
+<h2>Where your money goes</h2><p class="note" style="margin-top:-4px">Per month, in each season.</p>
+<div class="rows" id="groups"></div>
+<div class="card"><h3>How much rent can you afford?</h3><div class="kv" id="rent"></div><div class="info" id="rentinfo"></div></div>
+<div class="card"><h3>Tuition fund</h3><div class="kv" id="tuside"></div></div>
+<div class="card"><h3>Paying to move in</h3><div class="kv" id="move"></div><p class="note" id="movenote" style="margin-top:8px"></p></div>
+<div class="card"><h3>Your cash cushion over the first year</h3><p class="note" id="yearnote"></p><div class="fig"><svg id="year" role="img" aria-label="Cash balance over 12 months"></svg></div></div>
+</aside>
+</div></main>
+
+<section class="band ynab" id="ynab"><div class="wrap">
+<h2>From this plan to YNAB</h2>
+<p>This page builds your plan: a monthly budget that includes the apartment. YNAB is where you follow that plan each month after you move. The groups here match YNAB category groups, and each line becomes a YNAB category with that amount as its monthly target.</p>
+<div class="cols">
+<div>
+<div class="ys"><h3>Set up YNAB from this budget</h3><p>Create a category group for each group here, and a category for each line. Set each category's target to the amount shown in the table. Copy the list so you have it next to you while you set up YNAB.</p></div>
+<div class="ys"><h3>Record housing assistance as income</h3><p>When housing assistance lands in your account, record it as income and assign it, the same as a paycheck. Transportation costs that are covered for you stay out of your YNAB budget. If you ever get money for them instead, record it as income and add those car categories.</p></div>
+<div class="ys"><h3>Change your targets when summer starts</h3><p>YNAB targets are monthly. When summer starts, switch each category to its summer amount, and switch back when school starts again. Assign your extra summer income to your tuition fund and savings first. That's the money that gets you through the tighter school months.</p></div>
+<div class="ys"><h3>Fund the costs that come once or twice a year</h3><p>YNAB calls these true expenses. They include tuition, textbooks, car repairs and next year's deposit. Funding them a little each month means the money is there when the bill comes. Put lump sums like financial aid or a tax refund toward these categories first.</p></div>
+<div class="ys"><h3>Compare with real spending every month for the first three months</h3><p>At the end of each month, look at what YNAB shows you actually spent and update the amounts here. Groceries, eating out and utilities are the numbers that usually miss. If what's left at the end of the month goes negative, you'll see it before it turns into credit card debt.</p></div>
+<div class="ys"><h3>Update this page when something changes</h3><p>A raise, a new roommate, a lease renewal or a change in what's covered: change it here first and check that the budget still works. Then update your targets in YNAB.</p></div>
+</div>
+<div>
+<h3>Your YNAB categories and targets</h3>
+<div class="scroll"><table class="map"><thead><tr><th>Group</th><th>Category</th><th style="text-align:right">School year</th><th style="text-align:right">Summer</th></tr></thead><tbody id="map"></tbody></table></div>
+<div style="display:flex;gap:12px;align-items:center;margin-top:14px;flex-wrap:wrap"><button class="btn" id="copy" type="button">Copy category list</button><span class="note" id="copied" aria-live="polite"></span></div>
+<pre id="plain"></pre>
+<p class="note">YNAB is free for one year for college students who verify enrollment at ynab.com/college. After that it's a paid subscription.</p>
+</div>
+</div>
+</div></section>
+
+<div class="bar" aria-live="polite"><span>Left over the year</span><b id="barval"></b></div>
+
+<script>
+{
+const KEY='budget-builder-v7';
+const NOW=new Date(),NOWI=NOW.getFullYear()*12+NOW.getMonth();
+const SE=['school','summer'],SN={school:'School year',summer:'Summer'};
+const TU=[['tuition','Tuition per semester','$'],['aid','Scholarships and aid per semester','$'],['tset','Saved for tuition so far','$'],['tdue','Next payment due','month'],['tsem','Semesters per year','#']];
+const ASSETS=[['checking','Checking account','Today\'s balance'],['savings','Savings account',''],['stocks','Stocks and funds','Current value of a brokerage or investing app account'],['retire','Retirement accounts','Like a Roth IRA or a 401(k) from work'],['car',"Your car's value",'Only if the car is in your name. Use the private-party value from kbb.com'],['otherA','Other things worth money','Things you could sell, like gear or equipment']];
+const DEBTS=[['carLoan','Car loan balance','Only if the loan is in your name'],['cc','Credit card balances','What you owe today, even if you pay it off each month'],['student','Student loans',''],['otherD','Other debts','Money owed to anyone else, including family']];
+const A=(name,rent,people,util,net,renter,parking,miles,days,deposit,fees)=>({name,rent,people,util,net,renter,parking,miles,days,deposit,fees});
+const SAMPLE={months:{school:9,summer:3},inc:{school:{pay:560,freq:'biweekly',other:0},summer:{pay:900,freq:'biweekly',other:0}},housingHelp:800,
+ cov:{gas:true,payment:true,ins:true,maint:true,repairs:true},car:{payment:null,ins:null,maint:null,repairs:null},
+ apt:A('2-bed with a roommate',1650,2,160,70,15,0,6,5,800,100),
+ saved:[A('Studio near campus',1195,1,110,60,15,50,2,5,500,75),A('2-bed with a roommate',1650,2,160,70,15,0,6,5,800,100),A('1-bed in Sugar House',1395,1,120,60,15,0,4,5,600,50)],
+ mpg:28,gasPrice:3.1,otherMiles:250,sumMiles:8,sumDays:5,
+ cats:[['Food','Groceries',300,300],['Food','Eating out and coffee',100,120],['Bills','Phone',45,45],['Bills','Subscriptions',25,25],['Personal','Fun and going out',100,150],['Personal','Clothing',30,30],['Personal','Health and haircuts',40,40],['Personal','Gifts',15,15],['School','Books and fees',75,0],['Savings','Emergency fund',100,200]].map(([g,name,amt,sum])=>({g,name,amt,sum})),
+ oncePay:{dep:true,fees:true,first:true},once:[{name:'Furniture and kitchen basics',amt:600,pay:true},{name:'Moving truck and gas',amt:150,pay:true}],tuition:3600,aid:1000,tset:600,tdue:`${NOW.getFullYear()+(NOW.getMonth()>=7?1:0)}-08`,tsem:2,tmode:'season',nw:{checking:800,savings:2200,stocks:0,retire:0,car:0,otherA:0,carLoan:0,cc:0,student:0,otherD:0}};
+const GROUPS=['Housing','Transportation','Food','Bills','Personal','School','Savings'];
+const PAL={Housing:'#2340ff',Transportation:'#8b6bff',Food:'#ff9f43',Bills:'#ffd23f',Personal:'#ff7ab6',School:'#2ec5e8',Savings:'#c6f432'};
+const COL=g=>PAL[g];
+const INK=g=>['Housing','Transportation'].includes(g)?'#fff':'#0f1230';
+const clone=o=>JSON.parse(JSON.stringify(o));
+let S=clone(SAMPLE);
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.apt&&s.cats&&s.inc&&s.months&&s.nw)S=Object.assign(clone(SAMPLE),s)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const FREQ={weekly:52/12,biweekly:26/12,semimonthly:2,monthly:1};
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const usd=n=>(n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=id=>document.getElementById(id);
+function isSummer(cm){return ((cm-4+12)%12)<MU()}
+const MS=()=>Math.max(0,num(S.months.school)),MU=()=>Math.max(0,num(S.months.summer)),MT=()=>Math.max(1,MS()+MU());
+
+/* Transportation estimates. Sources: Experian Q2 2026 average used-car payment $542; Bankrate 2026 Utah full coverage for a 20-year-old on their own policy about $387/mo; AAA Your Driving Costs 2025 maintenance, repair and tires about 11¢/mile, split here 6¢ routine and 5¢ repairs. */
+const cash=()=>Math.max(0,num(S.nw.checking)+num(S.nw.savings)-num(S.tset));
+const tuit=()=>{const per=Math.max(0,num(S.tuition)-num(S.aid));const need=Math.max(0,per-num(S.tset));
+ const [y,m]=String(S.tdue||'').split('-').map(Number);const months=y&&m?Math.max(1,(y*12+m-1)-NOWI):1;
+ const due=y&&m?new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}):'';
+ let su=0;for(let i=0;i<months;i++)if(isSummer((NOW.getMonth()+i)%12))su++;
+ return {per,need,months,due,sm:months-su,um:su,monthly:need/months,ongoing:per*Math.max(0,num(S.tsem))/12,pct:per?Math.min(100,num(S.tset)/per*100):100}};
+const milesSe=(a,se)=>(se==='summer'?num(S.sumMiles)*2*num(S.sumDays):num(a.miles)*2*num(a.days))*52/12+num(S.otherMiles);
+const milesAvg=a=>(MS()*milesSe(a,'school')+MU()*milesSe(a,'summer'))/MT();
+const gasSe=(a,se)=>milesSe(a,se)/Math.max(1,num(S.mpg))*num(S.gasPrice);
+const EST={payment:()=>540,ins:()=>390,maint:a=>Math.max(25,milesAvg(a)*.06),repairs:a=>Math.max(50,milesAvg(a)*.05)};
+const CARITEMS=[['gas','Gas',a=>`About ${Math.round(milesSe(a,'school')).toLocaleString('en-US')} miles a month in school months and ${Math.round(milesSe(a,'summer')).toLocaleString('en-US')} in summer, using your car's mileage and gas price below.`],
+ ['payment','Car payment',()=>'The average used-car loan payment is about $540 a month. If your car is paid off, enter 0. Otherwise enter your real payment.'],
+ ['ins','Car insurance',()=>'A 20-year-old in Utah with full coverage on their own policy pays about $390 a month. Staying on a family policy is often much cheaper. Get a real quote.'],
+ ['maint','Routine maintenance',a=>`Oil changes, tires, registration and inspections. Estimated at about 6¢ per mile you drive: ${usd(EST.maint(a)*12)} a year.`],
+ ['repairs','Repairs',a=>`Brakes, batteries and surprise breakdowns. Estimated at about 5¢ per mile: ${usd(EST.repairs(a)*12)} a year. Older cars often need more. Many people keep $500 to $1,000 set aside.`]];
+const carAmt=(k,a,se)=>k==='gas'?gasSe(a,se):S.car[k]==null?EST[k](a):num(S.car[k]);
+
+const FREQSEL=(id,attrs,v)=>`<select id="${id}" ${attrs}>${[['weekly','Weekly'],['biweekly','Biweekly'],['semimonthly','2x a month'],['monthly','Monthly']].map(([o,n])=>`<option value="${o}" ${v===o?'selected':''}>${n}</option>`).join('')}</select>`;
+const fld=(id,k,l,t,h,v)=>`<div class="f"><label for="${id}">${l}${t==='$'?' ($)':''}${h?`<small>${h}</small>`:''}</label>${t==='sel'?FREQSEL(id,`data-k="${k}"`,v)
+ :`<input id="${id}" data-k="${k}" ${t==='t'?`type="text" value="${esc(v)}"`:t==='month'?`type="month" value="${esc(v)}"`:`type="number" inputmode="decimal" min="0" step="any" value="${v}"`}>`}</div>`;
+const APT=[['name','Apartment name','t'],['rent','Total monthly rent','$'],['people','People splitting rent','#','Including you'],['util','Utilities for the whole unit','$'],['net','Internet for the whole unit','$'],['renter',"Your renter's insurance",'$'],['parking','Parking','$'],['miles','Miles to campus, one way','#'],['days','Days a week you drive there','#'],['deposit','Deposit for the whole unit','$'],['fees','Your application and admin fees','$']];
+const CAR=[['mpg',"Your car's miles per gallon",'#'],['gasPrice','Gas price per gallon','$'],['otherMiles','Other driving per month','#','Errands, trips home, fun'],['sumMiles','Summer: miles to work, one way','#'],['sumDays','Summer: days a week you drive to work','#']];
+const chip=se=>`<span class="chip ${se}">${SN[se]}</span>`;
+const SEROWS=[['months','Months of the year','#'],['pay','Take-home pay per paycheck','$','After taxes'],['freq','How often you get paid','sel'],['other','Other monthly income','$','Financial aid or other money, averaged per month']];
+
+const renderInputs=()=>{
+ $('income').innerHTML=`<div class="sg"><span></span>${SE.map(chip).join('')}`+SEROWS.map(([k,l,t,h])=>`<label for="i-school-${k}">${l}${t==='$'?' ($)':''}${h?`<small>${h}</small>`:''}</label>`+SE.map(se=>k==='months'?`<input type="number" inputmode="numeric" min="0" max="12" step="1" id="i-${se}-${k}" data-mo="${se}" value="${S.months[se]}" aria-label="${SN[se]}: months">`:t==='sel'?FREQSEL(`i-${se}-${k}`,`data-se="${se}" data-sk="${k}" aria-label="${SN[se]}: ${l}"`,S.inc[se][k]):`<input type="number" inputmode="decimal" min="0" step="any" id="i-${se}-${k}" data-se="${se}" data-sk="${k}" value="${S.inc[se][k]}" aria-label="${SN[se]}: ${l}">`).join('')).join('')+`</div><p class="note" id="monote"></p>`+fld('f-housingHelp','housingHelp','Housing assistance per month, all year','$','',S.housingHelp);
+ $('tuit').innerHTML=TU.map(([k,l,t,h])=>fld('t-'+k,k,l,t,h,S[k])).join('')+`<div class="f"><label for="t-tmode">How to save</label><select id="t-tmode" data-k="tmode"><option value="season" ${S.tmode==='season'?'selected':''}>More in summer</option><option value="even" ${S.tmode!=='season'?'selected':''}>Same every month</option></select></div>`;
+ $('aptf').innerHTML=APT.map(([k,l,t,h])=>fld('a-'+k,'apt.'+k,l,t,h,S.apt[k])).join('');
+ const nf=([k,l,h])=>fld('nw-'+k,'nw.'+k,l,'$',h,S.nw[k]);$('assets').innerHTML=ASSETS.map(nf).join('');$('debts').innerHTML=DEBTS.map(nf).join('');
+ renderCov();renderCats();renderOnce();
+};
+const renderCov=()=>{
+ const any=['gas','maint','repairs'].some(k=>!S.cov[k]);
+ $('cov').innerHTML=CARITEMS.map(([k,l,h])=>`<div class="cv"><label class="chk"><input type="checkbox" id="cv-${k}" data-cov="${k}" ${S.cov[k]?'checked':''}>${l}</label>${S.cov[k]?'':`<div class="f est"><label for="ce-${k}">Budget for ${l.toLowerCase()} per month ($)<small>${h(S.apt)}</small></label>${k==='gas'?`<span class="calc" data-fx="gasboth"></span>`:`<input type="number" inputmode="decimal" min="0" step="any" id="ce-${k}" data-car="${k}" value="${Math.round(carAmt(k,S.apt,'school'))}">`}</div>`}</div>`).join('')+
+ (any?`<div class="carin two">${CAR.map(([k,l,t,h])=>fld('c-'+k,k,l,t,h,S[k])).join('')}</div>`:'');
+};
+const FIXED={Housing:[['rent','Rent, your share'],['util','Utilities and internet, your share'],['renter',"Renter's insurance"],['parking','Parking']]};
+const renderCats=()=>{
+ const Y=yr();
+ $('cats').innerHTML=`<div class="cat head"><span>Line</span><span class="chip school">School</span><span class="chip summer">Summer</span><span></span></div>`+GROUPS.map(g=>{
+  const fixed=g==='Housing'?FIXED.Housing.filter(([k])=>Y.school.fx[k]>0):g==='Transportation'?CARITEMS.filter(([k])=>!S.cov[k]).map(([k,l])=>['car-'+k,l]):g==='Savings'?[['tuition','Tuition fund']]:[];
+  return `<div class="grp"><h3><i style="background:${COL(g)}"></i>${g}</h3><b data-gt="${g}"></b></div>`+
+  (g==='Transportation'&&!fixed.length?`<p class="note" style="margin:6px 0">Your car costs are covered by assistance. Add a line here for anything else, like a transit pass or campus parking.</p>`:'')+
+  fixed.map(([k,n])=>`<div class="cat fixed"><span>${n}${g==='Transportation'?' <small class="note">(set in step 1)</small>':g==='Savings'?' <small class="note">(from your goal)</small>':''}</span>${SE.map(se=>`<span data-fx="${k}" data-fse="${se}"></span>`).join('')}<span></span></div>`).join('')+
+  S.cats.map((c,i)=>c.g!==g?'':`<div class="cat"><input type="text" id="cn-${i}" data-c="${i}" data-ck="name" value="${esc(c.name)}" aria-label="${g} line name">${SE.map(se=>`<input type="number" inputmode="decimal" min="0" step="any" id="c${se}-${i}" data-c="${i}" data-ck="${se==='school'?'amt':'sum'}" value="${se==='school'?c.amt:c.sum}" aria-label="${esc(c.name)}, ${SN[se]}, per month">`).join('')}<button class="x" type="button" data-del="${i}" aria-label="Remove ${esc(c.name)}">×</button></div>`).join('')+
+  (g==='Housing'?'':`<button class="add" type="button" data-add="${g}">+ Add a ${g.toLowerCase()} line</button>`);
+ }).join('');
+};
+const renderOnce=()=>{
+ const R=calc(),P=S.oncePay;
+ const fixed=[['dep','Deposit, your share'],['fees','Application and admin fees'],['first',"First month's rent, your share"]];
+ $('once').innerHTML=`<div class="ochead"><span></span><span>Cost (checked = you pay)</span><span style="text-align:right;padding-right:11px">Amount</span><span></span></div>`+
+ fixed.map(([k,n])=>`<div class="oc ${P[k]?'':'off'}"><input type="checkbox" id="op-${k}" data-op="${k}" ${P[k]?'checked':''} aria-label="You pay: ${n}"><span><label for="op-${k}" class="nm">${n}</label>${P[k]?'':'<span class="tag">Covered by family</span>'}</span><span class="amt">${usd(k==='first'?R.rentShare:R.fx[k])}</span><span></span></div>`).join('')+
+ S.once.map((o,i)=>`<div class="oc ${o.pay===false?'off':''}"><input type="checkbox" id="opi-${i}" data-opi="${i}" ${o.pay===false?'':'checked'} aria-label="You pay: ${esc(o.name)}"><input type="text" id="on-${i}" data-o="${i}" data-ok="name" value="${esc(o.name)}" aria-label="One-time cost name"><input type="number" inputmode="decimal" min="0" step="any" id="oa-${i}" data-o="${i}" data-ok="amt" value="${o.amt}" aria-label="${esc(o.name)} amount"><button class="x" type="button" data-odel="${i}" aria-label="Remove ${esc(o.name)}">×</button></div>`).join('')+
+ `<button class="add" type="button" id="addOnce">+ Add a one-time cost</button>`;
+};
+
+const plan=(apt=S.apt)=>{const T=tuit();const even={school:T.monthly,summer:T.monthly,mode:'even'};
+ if(T.need<=0)return {school:0,summer:0,mode:'done'};
+ if(S.tmode!=='season'||!T.um||!T.sm)return even;
+ const ls=Math.max(0,calc(apt,'school',0).left),lu=Math.max(0,calc(apt,'summer',0).left),den=T.sm*ls+T.um*lu;
+ if(den<=0)return even;const k=T.need/den;return {school:k*ls,summer:k*lu,mode:'season'}};
+const calc=(apt=S.apt,se='school',tu)=>{
+ const ppl=Math.max(1,num(apt.people)),I=S.inc[se];
+ const take=num(I.pay)*(FREQ[I.freq]||0)+num(I.other);
+ const hHelp=num(S.housingHelp);
+ const rentShare=num(apt.rent)/ppl,utilShare=(num(apt.util)+num(apt.net))/ppl;
+ const fx={rent:rentShare,util:utilShare,renter:num(apt.renter),parking:num(apt.parking),dep:num(apt.deposit)/ppl,fees:num(apt.fees)};
+ const G=Object.fromEntries(GROUPS.map(g=>[g,0]));
+ G.Housing=rentShare+utilShare+fx.renter+fx.parking;
+ CARITEMS.forEach(([k])=>{fx['car-'+k]=S.cov[k]?0:carAmt(k,apt,se);G.Transportation+=fx['car-'+k]});
+ S.cats.forEach(c=>{G[c.g]=(G[c.g]||0)+num(se==='school'?c.amt:c.sum)});
+ fx.tuition=tu==null?plan(apt)[se]:tu;G.Savings+=fx.tuition;
+ const income=take+hHelp;
+ const cost=Object.values(G).reduce((a,b)=>a+b,0);
+ const depShare=fx.dep,P=S.oncePay;
+ const all=depShare+num(apt.fees)+rentShare+S.once.reduce((a,o)=>a+num(o.amt),0);
+ const oneTime=(P.dep?depShare:0)+(P.fees?num(apt.fees):0)+S.once.reduce((a,o)=>a+(o.pay===false?0:num(o.amt)),0);
+ const moveIn=oneTime+(P.first?rentShare:0);
+ return {take,hHelp,income,cost,G,fx,rentShare,ppl,depShare,oneTime,moveIn,covered:all-moveIn,left:income-cost,maxShare:income-(cost-rentShare)};
+};
+const yr=(apt=S.apt)=>{const s=calc(apt,'school'),u=calc(apt,'summer'),ms=MS(),mu=MU(),mt=MT();
+ const total=ms*s.left+mu*u.left;
+ return {school:s,summer:u,ms,mu,total,avg:total/mt,maxShare:(ms*s.maxShare+mu*u.maxShare)/mt,avgIncome:(ms*s.income+mu*u.income)/mt,rentShare:s.rentShare,moveIn:s.moveIn,oneTime:s.oneTime,covered:s.covered,ppl:s.ppl}};
+
+
+const bar=(R,W)=>{const pct=v=>v/W*100,left=R.left;
+ return GROUPS.filter(g=>R.G[g]>0).map(g=>`<span style="width:${pct(R.G[g])}%;background:${COL(g)};color:${INK(g)}" title="${g} ${usd(R.G[g])}">${pct(R.G[g])>11?g:''}</span>`).join('')+(left>0?`<span class="left" style="width:${pct(left)}%">${pct(left)>9?'Left':''}</span>`:'')+(left<0?`<span class="over" style="position:absolute;top:0;left:${pct(R.income)}%;width:${pct(-left)}%"></span>`:'')};
+
+const render=()=>{
+ const Y=yr(),Rs=Y.school,Ru=Y.summer,T=tuit();
+ const nm=S.apt.name||'this apartment';
+ $('headline').innerHTML=Rs.left>=0&&Ru.left>=0?`Your budget works all year, with <span class="pos">${usd(Y.total)}</span> left over`:Y.total>=0?`Summer covers your school-year gap, with <span class="pos">${usd(Y.total)}</span> left over the year`:`You come up <span class="neg">${usd(-Y.total)}</span> short over the year`;
+ $('sub').textContent=`With ${nm}, you have ${usd(Rs.left)} a month left in school months and ${usd(Ru.left)} a month in summer.`+(Rs.left<0&&Ru.left>0&&Y.mu?` Save ${usd(-Rs.left*Y.ms/Y.mu)} from each summer month to cover the ${usd(-Rs.left*Y.ms)} gap during the school year.`:'');
+ const W=Math.max(Rs.income,Rs.cost,Ru.income,Ru.cost,1);
+ $('seasons').innerHTML=SE.map(se=>{const R=Y[se],m=se==='school'?Y.ms:Y.mu;return `<div class="sc"><div class="sch">${chip(se)}<span class="note">${m} month${m===1?'':'s'}</span></div><b class="big ${R.left<0?'neg':''}">${usd(R.left)}</b><span class="note">${R.left>=0?'left':'short'} each month</span><div class="bb">${bar(R,W)}</div><div class="mini"><span>Coming in <b>${usd(R.income)}</b></span><span>Budgeted <b>${usd(R.cost)}</b></span></div></div>`}).join('');
+ $('keys').innerHTML=GROUPS.map(g=>`<span><i style="background:${COL(g)}"></i>${g}</span>`).join('')+`<span><i style="background:var(--bg);border:2px dashed var(--teal)"></i>Left over</span><span><i style="background:var(--red)"></i>Over budget</span>`;
+ $('figs').innerHTML=[['Left over the year',usd(Y.total),Y.total>=0?'pos':'neg'],['Average per month',usd(Y.avg),Y.avg>=0?'':'neg'],['Highest rent share that fits',usd(Y.maxShare),Y.maxShare<Y.rentShare?'neg':''],['Your move-in costs',usd(Y.moveIn),Y.moveIn>cash()?'neg':'']].map(([l,v,c])=>`<div><b class="${c}">${v}</b><span>${l}</span></div>`).join('');
+ $('groups').innerHTML=`<div class="gh"><span></span>${chip('school')}${chip('summer')}</div>`+GROUPS.map(g=>`<div><span><i style="background:${COL(g)}"></i>${g}</span><b>${usd(Rs.G[g])}</b><b>${usd(Ru.G[g])}</b></div>`).join('')+`<div class="tot"><span>Left each month</span><b class="${Rs.left<0?'neg':'pos'}">${usd(Rs.left)}</b><b class="${Ru.left<0?'neg':'pos'}">${usd(Ru.left)}</b></div>`;
+ const room=Y.maxShare-Y.rentShare;
+ $('rent').innerHTML=`<div><span>Your share of rent here</span><span>${usd(Y.rentShare)}</span></div><div><span>The most you can pay, averaged over the year</span><span class="${room<0?'neg':''}">${usd(Y.maxShare)}</span></div><div class="tot"><span>${room>=0?'Room under your limit':'Over your limit by'}</span><span class="${room<0?'neg':'pos'}">${usd(Math.abs(room))}</span></div><div><span>The most during school months alone</span><span class="${Rs.maxShare<Y.rentShare?'neg':''}">${usd(Rs.maxShare)}</span></div>${Y.ppl>1?`<div><span>Most total rent if split ${Y.ppl} ways</span><span>${usd(Y.maxShare*Y.ppl)}</span></div>`:''}<div><span>30% rule of thumb</span><span>${usd(.3*Y.avgIncome)}</span></div>`;
+ $('rentinfo').innerHTML=`<i aria-hidden="true">i</i><div><p><b>How "the most you can pay" is figured:</b> for each season, take what comes in and subtract everything else in your budget except rent. What's left is what you can put toward rent. That works out to ${usd(Rs.maxShare)} in school months and ${usd(Ru.maxShare)} in summer, which averages to ${usd(Y.maxShare)} over the year. Rent is the same every month, so if school months alone can't cover it, you'll need to save money from summer to make up the difference.</p><p><b>The 30% rule</b> is a common guideline: keep rent at or under 30% of what comes in. For you that's about ${usd(.3*Y.avgIncome)} a month on average.</p></div>`;
+ const savSe=R=>R.G.Savings-R.fx.tuition+Math.max(0,R.left),sav=(Y.ms*savSe(Rs)+Y.mu*savSe(Ru))/MT(),short=Y.moveIn-cash();
+ $('move').innerHTML=`<div><span>You pay</span><span>${usd(Y.moveIn)}</span></div>${Y.covered>0?`<div><span>Covered by family</span><span>${usd(Y.covered)}</span></div>`:''}<div><span>Your cash, not counting tuition money</span><span>${usd(cash())}</span></div><div class="tot"><span>${short>0?'Still to save':'Left after moving in'}</span><span class="${short>0?'neg':'pos'}">${usd(Math.abs(short))}</span></div>`;
+ $('movenote').textContent=short>0?(sav>0?`If you keep saving about ${usd(sav)} a month on average (your savings goals plus what's left over), you'll have enough cash in about ${Math.ceil(short/sav)} month${Math.ceil(short/sav)>1?'s':''}.`:"This budget doesn't leave anything to save toward moving in yet."):'You can pay your share of the move-in costs from savings and still have some cash left.';
+ document.querySelectorAll('[data-gt]').forEach(e=>{const g=e.dataset.gt;e.textContent=`${usd(Rs.G[g])} · ${usd(Ru.G[g])}`});
+ document.querySelectorAll('[data-fx]').forEach(e=>{const k=e.dataset.fx;if(k==='gasboth'){e.textContent=`${usd(gasSe(S.apt,'school'))} school · ${usd(gasSe(S.apt,'summer'))} summer`;return}const R=Y[e.dataset.fse||'school'];if(R.fx[k]!=null)e.textContent=usd(R.fx[k])});
+ const mt=Y.ms+Y.mu;$('monote').textContent=mt===12?`Summer months are counted starting in May.`:`These add up to ${mt} months. Most years have 12, so check the numbers. Summer months are counted starting in May.`;
+ const at=ASSETS.reduce((a,[k])=>a+num(S.nw[k]),0),dt=DEBTS.reduce((a,[k])=>a+num(S.nw[k]),0);
+ $('atot').textContent=usd(at);$('dtot').textContent=usd(dt);$('nwval').textContent=usd(at-dt);$('nwval').className='big '+(at-dt<0?'neg':'');$('cashval').textContent=usd(cash());
+ const mname=T.due?T.due.split(' ')[0]:'your next';
+ const PL=plan(),seas=PL.mode==='season'&&Math.round(PL.school)!==Math.round(PL.summer);
+ $('tuhead').innerHTML=T.per<=0?'Your tuition is fully covered':T.need<=0?`${mname} tuition is <em>fully saved</em>`:seas?`Save <em>${usd(PL.school)}</em> a month in school and <em>${usd(PL.summer)}</em> in summer for ${mname} tuition`:`Save <em>${usd(T.monthly)}</em> a month for ${mname} tuition`;
+ $('tusub').textContent=T.per>0?`You've saved ${usd(num(S.tset))} of the ${usd(T.per)} you'll owe in ${T.due}. ${T.need>0?`${usd(T.need)} to go in ${T.months} month${T.months>1?'s':''}.`:'Nice work.'}`:'Scholarships and other help cover the whole bill.';
+ $('arc').style.strokeDashoffset=527.8*(1-T.pct/100);
+ $('tupct').textContent=Math.round(T.pct)+'%';$('tusaved').textContent=`${usd(num(S.tset))} of ${usd(T.per)}`;
+ const n=Math.min(T.months,18),cells=[];
+ for(let i=0;i<=n;i++){const k=Math.round(i*T.months/n),mi=NOWI+k,d=new Date(Math.floor(mi/12),mi%12,1);let acc=num(S.tset);for(let j=0;j<k;j++)acc+=isSummer((NOW.getMonth()+j)%12)?PL.summer:PL.school;const v=Math.min(T.per,acc);cells.push({l:i===0?'Now':i===n?'Due':d.toLocaleDateString('en-US',{month:'short'}),p:T.per?v/T.per*100:100,i,su:i>0&&isSummer(mi%12)})}
+ $('path').innerHTML=cells.map(c=>`<div class="${c.i===n?'due':''} ${c.su?'su':''}"><span class="col ${c.i===0?'now':''}"><span style="height:${c.p}%"></span></span><small>${c.l}</small></div>`).join('');
+ $('hstat').innerHTML=T.need<=0?'<span class="hstat">You have the full amount set aside</span>':Rs.left>=0&&Ru.left>=0?`<span class="hstat">Your budget covers it all year</span>`:Y.total>=0?`<span class="hstat">Covered over the year, as long as you save your summer extra</span>`:`<span class="hstat bad">Your budget is ${usd(-Y.total)} short over the year. Trim something below to stay on track</span>`;
+ $('tufigs').innerHTML=[['Still to save',usd(T.need)],['Months left',`${T.months}`],[`Per school month (${T.sm})`,usd(PL.school)],[`Per summer month (${T.um})`,usd(PL.summer)]].map(([l,v])=>`<div><b>${v}</b><span>${l}</span></div>`).join('')+`<p class="note" style="grid-column:1/-1;color:#dfe4ff;margin:0">${seas?'Summer saves more because that\'s when you have more money to spare. Each season puts the same share of its extra money toward tuition.':'The same amount every month until it\'s due.'}</p>`;
+ $('tuside').innerHTML=`<div><span>Next payment (${T.due||'date not set'})</span><span>${usd(T.per)}</span></div><div><span>Set aside so far</span><span>${usd(num(S.tset))}</span></div><div class="tot"><span>Per school month</span><span>${usd(PL.school)}</span></div><div class="tot"><span>Per summer month</span><span>${usd(PL.summer)}</span></div><div><span>After that payment, about</span><span>${usd(T.ongoing)}/mo</span></div>`;
+ $('barval').textContent=usd(Y.total);
+ renderTried();renderMap(Y);draw();
+};
+
+const same=(a,b)=>APT.every(([k])=>String(a[k])===String(b[k]));
+const renderTried=()=>{
+ $('tried').innerHTML=S.saved.length?S.saved.map((a,i)=>{const y=yr(a);return `<button type="button" data-load="${i}" aria-pressed="${same(a,S.apt)}">${esc(a.name)}<em>Rent share ${usd(y.rentShare)} · <span class="${y.total<0?'neg':''}">${usd(y.total)}</span> left over the year</em></button>`}).join('')+`<button type="button" class="add" id="clearTried" style="background:none;border:0">Clear list</button>`:'<span class="note">None saved yet.</span>';
+};
+const renderMap=Y=>{
+ const Rs=Y.school,Ru=Y.summer,items=[];
+ [['rent','Rent'],['util','Utilities and internet'],['renter',"Renter's insurance"],['parking','Parking']].forEach(([k,n])=>{if(Rs.fx[k]>0)items.push(['Housing',n,Rs.fx[k],Ru.fx[k]])});
+ CARITEMS.forEach(([k,n])=>{if(!S.cov[k])items.push(['Transportation',n,Rs.fx['car-'+k],Ru.fx['car-'+k]])});
+ GROUPS.forEach(g=>{if(g==='Savings'&&Rs.fx.tuition>0)items.push(['Savings','Tuition fund',Rs.fx.tuition,Ru.fx.tuition]);S.cats.forEach(c=>{if(c.g===g&&(num(c.amt)>0||num(c.sum)>0))items.push([g,c.name,num(c.amt),num(c.sum)])})});
+ $('map').innerHTML=items.map(([g,c,a,b],i)=>`<tr><td>${i&&items[i-1][0]===g?'':g}</td><td>${esc(c)}</td><td class="n">${usd(a)}</td><td class="n">${usd(b)}</td></tr>`).join('')+`<tr><td></td><td><b>Total targets</b></td><td class="n"><b>${usd(items.reduce((s,x)=>s+x[2],0))}</b></td><td class="n"><b>${usd(items.reduce((s,x)=>s+x[3],0))}</b></td></tr>`;
+ let t='',g='';items.forEach(([gr,c,a,b])=>{if(gr!==g){t+=(g?'\n':'')+gr+'\n';g=gr}t+=`  ${c}: ${Math.round(a)===Math.round(b)?usd(a):`${usd(a)} school year / ${usd(b)} summer`}\n`});
+ const cv=CARITEMS.filter(([k])=>S.cov[k]).map(([,n])=>n.toLowerCase());
+ t+=`\nIncome to record each month: paychecks about ${usd(Rs.take)} in school months and ${usd(Ru.take)} in summer`+(Rs.hHelp?`, plus housing assistance ${usd(Rs.hHelp)}`:'')+(cv.length?`\nCovered by assistance, left out of the budget: ${cv.join(', ')}`:'');
+ $('plain').textContent=t;
+};
+
+const svg=$('year');
+const draw=()=>{
+ const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+ const Y=yr();let bal=cash()-Y.oneTime;const pts=[bal],su=[false];
+ for(let m=1;m<=12;m++){const s=isSummer((NOW.getMonth()+m)%12),R=s?Y.summer:Y.school;bal+=R.left+R.G.Savings-R.fx.tuition;pts.push(bal);su.push(s)}
+ const lo=Math.min(0,...pts),hi=Math.max(0,...pts),span=(hi-lo)||1;
+ const L=58,Rm=16,T=16,B=28,x=i=>L+i*(W-L-Rm)/12,y=v=>T+(hi-v)/span*(H-T-B);
+ const step=Math.pow(10,Math.floor(Math.log10(span/3)));const st=[1,2,5,10].map(k=>k*step).find(s=>span/s<=4)||step*10;
+ let tk='';for(let v=Math.ceil(lo/st)*st;v<=hi+1e-6;v+=st)tk+=`<line x1="${L}" x2="${W-Rm}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${usd(v)}</text>`;
+ const shade=su.map((s,i)=>s?`<rect x="${x(i-1)}" y="${T}" width="${x(1)-x(0)}" height="${H-T-B}" fill="#ffd23f" opacity=".28"/>`:'').join('');
+ const line=pts.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v)}`).join('');
+ const neg=pts.some(v=>v<0);
+ const labs=(W<420?[0,6,12]:[0,3,6,9,12]).map(i=>`<text x="${x(i)}" y="${H-6}" text-anchor="${i?i===12?'end':'middle':'start'}">${i?new Date(NOW.getFullYear(),NOW.getMonth()+i,1).toLocaleDateString('en-US',{month:'short'}):'Move-in'}</text>`).join('');
+ svg.innerHTML=shade+tk+`<path d="${line}L${x(12)},${y(0)}L${x(0)},${y(0)}Z" fill="color-mix(in srgb,var(--teal) 16%,var(--bg))"/><line x1="${L}" x2="${W-Rm}" y1="${y(0)}" y2="${y(0)}" stroke="var(--ink)"/><path d="${line}" fill="none" stroke="${neg?'var(--red)':'var(--teal)'}" stroke-width="3"/>`+pts.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="${v<0?'var(--red)':'var(--teal)'}"/>`).join('')+labs;
+ $('yearnote').textContent=`After paying your one-time move-in costs you start at ${usd(pts[0])} and end the year near ${usd(pts[12])}. Yellow columns are summer months. This counts your other savings goals plus whatever is left each month. Your tuition fund is kept separate.${neg?' Red points are months when you would run out of cash.':''}`;
+};
+const ro=new ResizeObserver(draw);ro.observe(svg);
+
+const main=document.body;
+const onInput=e=>{
+ const t=e.target,d=t.dataset;
+ if(d.cov){if(e.type!=='change')return;S.cov[d.cov]=t.checked;save();renderCov();renderCats();render();return}
+ if(d.op||d.opi!==undefined){if(e.type!=='change')return;if(d.op)S.oncePay[d.op]=t.checked;else S.once[+d.opi].pay=t.checked;save();renderOnce();render();return}
+ if(d.mo){S.months[d.mo]=Math.min(12,num(t.value))}
+ else if(d.se){S.inc[d.se][d.sk]=d.sk==='freq'?t.value:num(t.value)}
+ else if(d.car){S.car[d.car]=t.value===''?null:num(t.value)}
+ else if(d.c!==undefined){S.cats[+d.c][d.ck]=d.ck==='name'?t.value:num(t.value)}
+ else if(d.o!==undefined){S.once[+d.o][d.ok]=d.ok==='amt'?num(t.value):t.value}
+ else if(d.k){const v=t.type==='number'?num(t.value):t.value;if(d.k.startsWith('apt.'))S.apt[d.k.slice(4)]=v;else if(d.k.startsWith('nw.'))S.nw[d.k.slice(3)]=v;else S[d.k]=v;
+  if(e.type==='change'&&(d.k.startsWith('apt.')||CAR.some(c=>c[0]===d.k))){renderCov();renderCats();renderOnce()}}
+ else return;
+ save();render();
+};
+main.addEventListener('input',onInput);main.addEventListener('change',onInput);
+main.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+ if(d.add){S.cats.push({g:d.add,name:'New '+d.add.toLowerCase()+' line',amt:0,sum:0});save();renderCats();render();const n=$('cn-'+(S.cats.length-1));n&&n.select()}
+ else if(d.del!==undefined){S.cats.splice(+d.del,1);save();renderCats();render()}
+ else if(b.id==='addOnce'){S.once.push({name:'Other move-in cost',amt:0,pay:true});save();renderOnce();render()}
+ else if(d.odel!==undefined){S.once.splice(+d.odel,1);save();renderOnce();render()}
+ else if(d.load!==undefined){S.apt=clone(S.saved[+d.load]);save();renderInputs();render()}
+ else if(b.id==='clearTried'){S.saved=[];save();render()}
+ else if(b.id==='saveApt'){const i=S.saved.findIndex(a=>a.name===S.apt.name);if(i>=0)S.saved[i]=clone(S.apt);else S.saved.push(clone(S.apt));save();$('savedMsg').textContent=i>=0?'Updated.':'Saved.';render()}
+ else if(b.id==='reset'){S=clone(SAMPLE);save();renderInputs();render()}
+});
+$('copy').addEventListener('click',()=>{const o=$('copied');const fail=()=>{o.textContent='Copy was blocked. Select the list below and copy it.'};try{navigator.clipboard.writeText($('plain').textContent).then(()=>{o.textContent='Copied.'},fail)}catch(e){fail()}});
+renderInputs();render();
+}
+</script>
+</body>
+</html>
