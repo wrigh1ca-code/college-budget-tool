@@ -199,11 +199,15 @@ input:hover,select:hover{border-color:color-mix(in srgb,var(--teal) 45%,var(--ru
 @media(max-width:600px){.sg{grid-template-columns:minmax(0,1fr) 6em 6em;gap:8px}.cat{grid-template-columns:minmax(0,1fr) 4.8em 4.8em 34px!important;gap:5px}.cat input{padding:8px 6px}.chip{font-size:12px;padding:3px 8px}}
 #income{display:block!important}
 #income>.f{max-width:24em;margin-top:8px}
+.howto{background:rgba(255,255,255,.12);border:2px solid var(--lime);border-radius:16px;padding:12px 16px;max-width:760px;margin:-8px 0 26px;font-size:16px;line-height:1.5;color:#fff}
+.howto b{color:var(--lime)}
+input::placeholder{color:color-mix(in srgb,var(--ink) 35%,transparent)}
 </style>
 </head>
 <body>
 <header class="band hero"><div class="wrap">
 <div class="brand"><i aria-hidden="true"></i>Budget Builder</div>
+<div class="howto"><b>How to use this:</b> fill in the blanks, starting with your tuition goal below and then steps 1 through 5. Everything updates as you type. Your numbers are saved in this browser, so come back anytime to update them and check whether you're on track for your goals.</div>
 <h1 id="tuhead">Your tuition goal</h1>
 <p class="lede" id="tusub"></p>
 <div class="hg">
@@ -231,8 +235,8 @@ input:hover,select:hover{border-color:color-mix(in srgb,var(--teal) 45%,var(--ru
 <main class="band"><div class="wrap grid">
 <div>
 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
-<p class="note" style="margin:0">The starting numbers are made-up examples. Replace them with your real numbers. Your changes are saved in this browser only.</p>
-<button class="btn ghost" id="reset" type="button">Start over with sample</button>
+<p class="note" style="margin:0">Your numbers are saved in this browser only. Want to see how it works first? Load an example, then clear it when you're ready to enter your own.</p>
+<span style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="example" type="button">Load an example</button><button class="btn ghost" id="reset" type="button">Clear all</button></span>
 </div>
 
 <section class="step"><h2><span class="n">1</span>Money coming in</h2><p>Your income usually changes between the school year and summer, when you can work more hours. Enter how many months each one lasts and what you take home in each.</p>
@@ -298,7 +302,7 @@ input:hover,select:hover{border-color:color-mix(in srgb,var(--teal) 45%,var(--ru
 
 <script>
 {
-const KEY='budget-builder-v7';
+const KEY='budget-builder-v8';
 const NOW=new Date(),NOWI=NOW.getFullYear()*12+NOW.getMonth();
 const SE=['school','summer'],SN={school:'School year',summer:'Summer'};
 const TU=[['tuition','Tuition per semester','$'],['aid','Scholarships and aid per semester','$'],['tset','Saved for tuition so far','$'],['tdue','Next payment due','month'],['tsem','Semesters per year','#']];
@@ -317,8 +321,10 @@ const PAL={Housing:'#2340ff',Transportation:'#8b6bff',Food:'#ff9f43',Bills:'#ffd
 const COL=g=>PAL[g];
 const INK=g=>['Housing','Transportation'].includes(g)?'#fff':'#0f1230';
 const clone=o=>JSON.parse(JSON.stringify(o));
-let S=clone(SAMPLE);
-try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.apt&&s.cats&&s.inc&&s.months&&s.nw)S=Object.assign(clone(SAMPLE),s)}catch(e){}
+const blank=(o,k)=>Array.isArray(o)?o.map(x=>blank(x)):o&&typeof o==='object'?Object.fromEntries(Object.entries(o).map(([kk,v])=>[kk,blank(v,kk)])):typeof o==='number'?'':(k==='tdue')?'':o;
+const EMPTY=Object.assign(blank(clone(SAMPLE)),{saved:[],apt:Object.fromEntries(Object.keys(SAMPLE.apt).map(k=>[k,'']))});
+let S=clone(EMPTY);
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.apt&&s.cats&&s.inc&&s.months&&s.nw)S=Object.assign(clone(EMPTY),s)}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const FREQ={weekly:52/12,biweekly:26/12,semimonthly:2,monthly:1};
 const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
@@ -331,10 +337,10 @@ const MS=()=>Math.max(0,num(S.months.school)),MU=()=>Math.max(0,num(S.months.sum
 /* Transportation estimates. Sources: Experian Q2 2026 average used-car payment $542; Bankrate 2026 Utah full coverage for a 20-year-old on their own policy about $387/mo; AAA Your Driving Costs 2025 maintenance, repair and tires about 11¢/mile, split here 6¢ routine and 5¢ repairs. */
 const cash=()=>Math.max(0,num(S.nw.checking)+num(S.nw.savings)-num(S.tset));
 const tuit=()=>{const per=Math.max(0,num(S.tuition)-num(S.aid));const need=Math.max(0,per-num(S.tset));
- const [y,m]=String(S.tdue||'').split('-').map(Number);const months=y&&m?Math.max(1,(y*12+m-1)-NOWI):1;
+ const [y,m]=String(S.tdue||'').split('-').map(Number);const months=y&&m?Math.max(1,(y*12+m-1)-NOWI):0;
  const due=y&&m?new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}):'';
  let su=0;for(let i=0;i<months;i++)if(isSummer((NOW.getMonth()+i)%12))su++;
- return {per,need,months,due,sm:months-su,um:su,monthly:need/months,ongoing:per*Math.max(0,num(S.tsem))/12,pct:per?Math.min(100,num(S.tset)/per*100):100}};
+ return {per,need,months,due,sm:months-su,um:su,monthly:months?need/months:0,ongoing:per*Math.max(0,num(S.tsem))/12,pct:per?Math.min(100,num(S.tset)/per*100):100}};
 const milesSe=(a,se)=>(se==='summer'?num(S.sumMiles)*2*num(S.sumDays):num(a.miles)*2*num(a.days))*52/12+num(S.otherMiles);
 const milesAvg=a=>(MS()*milesSe(a,'school')+MU()*milesSe(a,'summer'))/MT();
 const gasSe=(a,se)=>milesSe(a,se)/Math.max(1,num(S.mpg))*num(S.gasPrice);
@@ -348,14 +354,14 @@ const carAmt=(k,a,se)=>k==='gas'?gasSe(a,se):S.car[k]==null?EST[k](a):num(S.car[
 
 const FREQSEL=(id,attrs,v)=>`<select id="${id}" ${attrs}>${[['weekly','Weekly'],['biweekly','Biweekly'],['semimonthly','2x a month'],['monthly','Monthly']].map(([o,n])=>`<option value="${o}" ${v===o?'selected':''}>${n}</option>`).join('')}</select>`;
 const fld=(id,k,l,t,h,v)=>`<div class="f"><label for="${id}">${l}${t==='$'?' ($)':''}${h?`<small>${h}</small>`:''}</label>${t==='sel'?FREQSEL(id,`data-k="${k}"`,v)
- :`<input id="${id}" data-k="${k}" ${t==='t'?`type="text" value="${esc(v)}"`:t==='month'?`type="month" value="${esc(v)}"`:`type="number" inputmode="decimal" min="0" step="any" value="${v}"`}>`}</div>`;
+ :`<input id="${id}" data-k="${k}" ${t==='t'?`type="text" value="${esc(v)}"`:t==='month'?`type="month" value="${esc(v)}"`:`type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${v}"`}>`}</div>`;
 const APT=[['name','Apartment name','t'],['rent','Total monthly rent','$'],['people','People splitting rent','#','Including you'],['util','Utilities for the whole unit','$'],['net','Internet for the whole unit','$'],['renter',"Your renter's insurance",'$'],['parking','Parking','$'],['miles','Miles to campus, one way','#'],['days','Days a week you drive there','#'],['deposit','Deposit for the whole unit','$'],['fees','Your application and admin fees','$']];
 const CAR=[['mpg',"Your car's miles per gallon",'#'],['gasPrice','Gas price per gallon','$'],['otherMiles','Other driving per month','#','Errands, trips home, fun'],['sumMiles','Summer: miles to work, one way','#'],['sumDays','Summer: days a week you drive to work','#']];
 const chip=se=>`<span class="chip ${se}">${SN[se]}</span>`;
 const SEROWS=[['months','Months of the year','#'],['pay','Take-home pay per paycheck','$','After taxes'],['freq','How often you get paid','sel'],['other','Other monthly income','$','Financial aid or other money, averaged per month']];
 
 const renderInputs=()=>{
- $('income').innerHTML=`<div class="sg"><span></span>${SE.map(chip).join('')}`+SEROWS.map(([k,l,t,h])=>`<label for="i-school-${k}">${l}${t==='$'?' ($)':''}${h?`<small>${h}</small>`:''}</label>`+SE.map(se=>k==='months'?`<input type="number" inputmode="numeric" min="0" max="12" step="1" id="i-${se}-${k}" data-mo="${se}" value="${S.months[se]}" aria-label="${SN[se]}: months">`:t==='sel'?FREQSEL(`i-${se}-${k}`,`data-se="${se}" data-sk="${k}" aria-label="${SN[se]}: ${l}"`,S.inc[se][k]):`<input type="number" inputmode="decimal" min="0" step="any" id="i-${se}-${k}" data-se="${se}" data-sk="${k}" value="${S.inc[se][k]}" aria-label="${SN[se]}: ${l}">`).join('')).join('')+`</div><p class="note" id="monote"></p>`+fld('f-housingHelp','housingHelp','Housing assistance per month, all year','$','',S.housingHelp);
+ $('income').innerHTML=`<div class="sg"><span></span>${SE.map(chip).join('')}`+SEROWS.map(([k,l,t,h])=>`<label for="i-school-${k}">${l}${t==='$'?' ($)':''}${h?`<small>${h}</small>`:''}</label>`+SE.map(se=>k==='months'?`<input type="number" inputmode="numeric" min="0" max="12" step="1" id="i-${se}-${k}" data-mo="${se}" placeholder="${se==='school'?9:3}" value="${S.months[se]}" aria-label="${SN[se]}: months">`:t==='sel'?FREQSEL(`i-${se}-${k}`,`data-se="${se}" data-sk="${k}" aria-label="${SN[se]}: ${l}"`,S.inc[se][k]):`<input type="number" inputmode="decimal" min="0" step="any" id="i-${se}-${k}" data-se="${se}" data-sk="${k}" value="${S.inc[se][k]}" aria-label="${SN[se]}: ${l}">`).join('')).join('')+`</div><p class="note" id="monote"></p>`+fld('f-housingHelp','housingHelp','Housing assistance per month, all year','$','',S.housingHelp);
  $('tuit').innerHTML=TU.map(([k,l,t,h])=>fld('t-'+k,k,l,t,h,S[k])).join('')+`<div class="f"><label for="t-tmode">How to save</label><select id="t-tmode" data-k="tmode"><option value="season" ${S.tmode==='season'?'selected':''}>More in summer</option><option value="even" ${S.tmode!=='season'?'selected':''}>Same every month</option></select></div>`;
  $('aptf').innerHTML=APT.map(([k,l,t,h])=>fld('a-'+k,'apt.'+k,l,t,h,S.apt[k])).join('');
  const nf=([k,l,h])=>fld('nw-'+k,'nw.'+k,l,'$',h,S.nw[k]);$('assets').innerHTML=ASSETS.map(nf).join('');$('debts').innerHTML=DEBTS.map(nf).join('');
@@ -388,7 +394,7 @@ const renderOnce=()=>{
 };
 
 const plan=(apt=S.apt)=>{const T=tuit();const even={school:T.monthly,summer:T.monthly,mode:'even'};
- if(T.need<=0)return {school:0,summer:0,mode:'done'};
+ if(T.need<=0||!T.months)return {school:0,summer:0,mode:'done'};
  if(S.tmode!=='season'||!T.um||!T.sm)return even;
  const ls=Math.max(0,calc(apt,'school',0).left),lu=Math.max(0,calc(apt,'summer',0).left),den=T.sm*ls+T.um*lu;
  if(den<=0)return even;const k=T.need/den;return {school:k*ls,summer:k*lu,mode:'season'}};
@@ -422,8 +428,9 @@ const bar=(R,W)=>{const pct=v=>v/W*100,left=R.left;
 const render=()=>{
  const Y=yr(),Rs=Y.school,Ru=Y.summer,T=tuit();
  const nm=S.apt.name||'this apartment';
- $('headline').innerHTML=Rs.left>=0&&Ru.left>=0?`Your budget works all year, with <span class="pos">${usd(Y.total)}</span> left over`:Y.total>=0?`Summer covers your school-year gap, with <span class="pos">${usd(Y.total)}</span> left over the year`:`You come up <span class="neg">${usd(-Y.total)}</span> short over the year`;
- $('sub').textContent=`With ${nm}, you have ${usd(Rs.left)} a month left in school months and ${usd(Ru.left)} a month in summer.`+(Rs.left<0&&Ru.left>0&&Y.mu?` Save ${usd(-Rs.left*Y.ms/Y.mu)} from each summer month to cover the ${usd(-Rs.left*Y.ms)} gap during the school year.`:'');
+ const hasI=Rs.income>0||Ru.income>0;
+ $('headline').innerHTML=!hasI?'Your budget will show up here':!(Y.ms+Y.mu)?'Almost there: how many months is each season?':Rs.left>=0&&Ru.left>=0?`Your budget works all year, with <span class="pos">${usd(Y.total)}</span> left over`:Y.total>=0?`Summer covers your school-year gap, with <span class="pos">${usd(Y.total)}</span> left over the year`:`You come up <span class="neg">${usd(-Y.total)}</span> short over the year`;
+ $('sub').textContent=hasI&&!(Y.ms+Y.mu)?'Enter the number of school months and summer months in step 1, usually 9 and 3.':!hasI?'Fill in your income in step 1 and your spending in step 3. You\'ll see what\'s left each month during the school year and in summer.':`With ${nm}, you have ${usd(Rs.left)} a month left in school months and ${usd(Ru.left)} a month in summer.`+(Rs.left<0&&Ru.left>0&&Y.mu?` Save ${usd(-Rs.left*Y.ms/Y.mu)} from each summer month to cover the ${usd(-Rs.left*Y.ms)} gap during the school year.`:'');
  const W=Math.max(Rs.income,Rs.cost,Ru.income,Ru.cost,1);
  $('seasons').innerHTML=SE.map(se=>{const R=Y[se],m=se==='school'?Y.ms:Y.mu;return `<div class="sc"><div class="sch">${chip(se)}<span class="note">${m} month${m===1?'':'s'}</span></div><b class="big ${R.left<0?'neg':''}">${usd(R.left)}</b><span class="note">${R.left>=0?'left':'short'} each month</span><div class="bb">${bar(R,W)}</div><div class="mini"><span>Coming in <b>${usd(R.income)}</b></span><span>Budgeted <b>${usd(R.cost)}</b></span></div></div>`}).join('');
  $('keys').innerHTML=GROUPS.map(g=>`<span><i style="background:${COL(g)}"></i>${g}</span>`).join('')+`<span><i style="background:var(--bg);border:2px dashed var(--teal)"></i>Left over</span><span><i style="background:var(--red)"></i>Over budget</span>`;
@@ -437,20 +444,22 @@ const render=()=>{
  $('movenote').textContent=short>0?(sav>0?`If you keep saving about ${usd(sav)} a month on average (your savings goals plus what's left over), you'll have enough cash in about ${Math.ceil(short/sav)} month${Math.ceil(short/sav)>1?'s':''}.`:"This budget doesn't leave anything to save toward moving in yet."):'You can pay your share of the move-in costs from savings and still have some cash left.';
  document.querySelectorAll('[data-gt]').forEach(e=>{const g=e.dataset.gt;e.textContent=`${usd(Rs.G[g])} · ${usd(Ru.G[g])}`});
  document.querySelectorAll('[data-fx]').forEach(e=>{const k=e.dataset.fx;if(k==='gasboth'){e.textContent=`${usd(gasSe(S.apt,'school'))} school · ${usd(gasSe(S.apt,'summer'))} summer`;return}const R=Y[e.dataset.fse||'school'];if(R.fx[k]!=null)e.textContent=usd(R.fx[k])});
- const mt=Y.ms+Y.mu;$('monote').textContent=mt===12?`Summer months are counted starting in May.`:`These add up to ${mt} months. Most years have 12, so check the numbers. Summer months are counted starting in May.`;
+ const mt=Y.ms+Y.mu;$('monote').textContent=mt===0?'Usually about 9 school months and 3 summer months. Summer is counted starting in May.':mt===12?`Summer months are counted starting in May.`:`These add up to ${mt} months. Most years have 12, so check the numbers. Summer months are counted starting in May.`;
  const at=ASSETS.reduce((a,[k])=>a+num(S.nw[k]),0),dt=DEBTS.reduce((a,[k])=>a+num(S.nw[k]),0);
  $('atot').textContent=usd(at);$('dtot').textContent=usd(dt);$('nwval').textContent=usd(at-dt);$('nwval').className='big '+(at-dt<0?'neg':'');$('cashval').textContent=usd(cash());
  const mname=T.due?T.due.split(' ')[0]:'your next';
  const PL=plan(),seas=PL.mode==='season'&&Math.round(PL.school)!==Math.round(PL.summer);
- $('tuhead').innerHTML=T.per<=0?'Your tuition is fully covered':T.need<=0?`${mname} tuition is <em>fully saved</em>`:seas?`Save <em>${usd(PL.school)}</em> a month in school and <em>${usd(PL.summer)}</em> in summer for ${mname} tuition`:`Save <em>${usd(T.monthly)}</em> a month for ${mname} tuition`;
- $('tusub').textContent=T.per>0?`You've saved ${usd(num(S.tset))} of the ${usd(T.per)} you'll owe in ${T.due}. ${T.need>0?`${usd(T.need)} to go in ${T.months} month${T.months>1?'s':''}.`:'Nice work.'}`:'Scholarships and other help cover the whole bill.';
- $('arc').style.strokeDashoffset=527.8*(1-T.pct/100);
- $('tupct').textContent=Math.round(T.pct)+'%';$('tusaved').textContent=`${usd(num(S.tset))} of ${usd(T.per)}`;
- const n=Math.min(T.months,18),cells=[];
- for(let i=0;i<=n;i++){const k=Math.round(i*T.months/n),mi=NOWI+k,d=new Date(Math.floor(mi/12),mi%12,1);let acc=num(S.tset);for(let j=0;j<k;j++)acc+=isSummer((NOW.getMonth()+j)%12)?PL.summer:PL.school;const v=Math.min(T.per,acc);cells.push({l:i===0?'Now':i===n?'Due':d.toLocaleDateString('en-US',{month:'short'}),p:T.per?v/T.per*100:100,i,su:i>0&&isSummer(mi%12)})}
+ const noTu=num(S.tuition)<=0;
+ $('tuhead').innerHTML=noTu?'Set your <em>tuition goal</em>':!T.months&&T.need>0?`Save <em>${usd(T.need)}</em> for your next tuition payment`:T.per<=0?'Your tuition is fully covered':T.need<=0?`${mname} tuition is <em>fully saved</em>`:seas?`Save <em>${usd(PL.school)}</em> a month in school and <em>${usd(PL.summer)}</em> in summer for ${mname} tuition`:`Save <em>${usd(T.monthly)}</em> a month for ${mname} tuition`;
+ $('tusub').textContent=noTu?'Enter your tuition, any scholarships or aid, and when your next payment is due. You\'ll see exactly how much to set aside each month.':!T.months?'Pick when your next payment is due to see how much to save each month.':T.per>0?`You've saved ${usd(num(S.tset))} of the ${usd(T.per)} you'll owe in ${T.due}. ${T.need>0?`${usd(T.need)} to go in ${T.months} month${T.months>1?'s':''}.`:'Nice work.'}`:'Scholarships and other help cover the whole bill.';
+ const pc=noTu?0:T.pct;$('arc').style.strokeDashoffset=527.8*(1-pc/100);
+ $('tupct').textContent=Math.round(pc)+'%';$('tusaved').textContent=noTu?'of your goal':`${usd(num(S.tset))} of ${usd(T.per)}`;
+ const ph=noTu||!T.months,n=ph?9:Math.min(T.months,18),cells=[];
+ for(let i=0;i<=n;i++){const k=ph?i:Math.round(i*T.months/n),mi=NOWI+k,d=new Date(Math.floor(mi/12),mi%12,1);let acc=num(S.tset);for(let j=0;j<k;j++)acc+=isSummer((NOW.getMonth()+j)%12)?PL.summer:PL.school;const v=Math.min(T.per,acc);cells.push({l:i===0?'Now':i===n?(ph?'Due?':'Due'):d.toLocaleDateString('en-US',{month:'short'}),p:ph?0:T.per?v/T.per*100:100,i,su:i>0&&isSummer(mi%12)})}
  $('path').innerHTML=cells.map(c=>`<div class="${c.i===n?'due':''} ${c.su?'su':''}"><span class="col ${c.i===0?'now':''}"><span style="height:${c.p}%"></span></span><small>${c.l}</small></div>`).join('');
- $('hstat').innerHTML=T.need<=0?'<span class="hstat">You have the full amount set aside</span>':Rs.left>=0&&Ru.left>=0?`<span class="hstat">Your budget covers it all year</span>`:Y.total>=0?`<span class="hstat">Covered over the year, as long as you save your summer extra</span>`:`<span class="hstat bad">Your budget is ${usd(-Y.total)} short over the year. Trim something below to stay on track</span>`;
- $('tufigs').innerHTML=[['Still to save',usd(T.need)],['Months left',`${T.months}`],[`Per school month (${T.sm})`,usd(PL.school)],[`Per summer month (${T.um})`,usd(PL.summer)]].map(([l,v])=>`<div><b>${v}</b><span>${l}</span></div>`).join('')+`<p class="note" style="grid-column:1/-1;color:#dfe4ff;margin:0">${seas?'Summer saves more because that\'s when you have more money to spare. Each season puts the same share of its extra money toward tuition.':'The same amount every month until it\'s due.'}</p>`;
+ const hasInc=Rs.income>0||Ru.income>0;
+ $('hstat').innerHTML=noTu||!T.months?'':!hasInc?'<span class="hstat" style="background:#fff">Add your income in step 1 to check if your budget covers it</span>':T.need<=0?'<span class="hstat">You have the full amount set aside</span>':Rs.left>=0&&Ru.left>=0?`<span class="hstat">Your budget covers it all year</span>`:Y.total>=0?`<span class="hstat">Covered over the year, as long as you save your summer extra</span>`:`<span class="hstat bad">Your budget is ${usd(-Y.total)} short over the year. Trim something below to stay on track</span>`;
+ $('tufigs').innerHTML=[['Still to save',usd(T.need)],['Months left',`${T.months}`],[`Per school month (${T.sm})`,usd(PL.school)],[`Per summer month (${T.um})`,usd(PL.summer)]].map(([l,v])=>`<div><b>${v}</b><span>${l}</span></div>`).join('')+`<p class="note" style="grid-column:1/-1;color:#dfe4ff;margin:0">${noTu||!T.months?'Your monthly savings plan shows up here once you set a tuition amount and due date.':seas?'Summer saves more because that\'s when you have more money to spare. Each season puts the same share of its extra money toward tuition.':'The same amount every month until it\'s due.'}</p>`;
  $('tuside').innerHTML=`<div><span>Next payment (${T.due||'date not set'})</span><span>${usd(T.per)}</span></div><div><span>Set aside so far</span><span>${usd(num(S.tset))}</span></div><div class="tot"><span>Per school month</span><span>${usd(PL.school)}</span></div><div class="tot"><span>Per summer month</span><span>${usd(PL.summer)}</span></div><div><span>After that payment, about</span><span>${usd(T.ongoing)}/mo</span></div>`;
  $('barval').textContent=usd(Y.total);
  renderTried();renderMap(Y);draw();
@@ -515,7 +524,8 @@ main.addEventListener('click',e=>{
  else if(d.load!==undefined){S.apt=clone(S.saved[+d.load]);save();renderInputs();render()}
  else if(b.id==='clearTried'){S.saved=[];save();render()}
  else if(b.id==='saveApt'){const i=S.saved.findIndex(a=>a.name===S.apt.name);if(i>=0)S.saved[i]=clone(S.apt);else S.saved.push(clone(S.apt));save();$('savedMsg').textContent=i>=0?'Updated.':'Saved.';render()}
- else if(b.id==='reset'){S=clone(SAMPLE);save();renderInputs();render()}
+ else if(b.id==='reset'){S=clone(EMPTY);save();renderInputs();render()}
+ else if(b.id==='example'){S=clone(SAMPLE);save();renderInputs();render()}
 });
 $('copy').addEventListener('click',()=>{const o=$('copied');const fail=()=>{o.textContent='Copy was blocked. Select the list below and copy it.'};try{navigator.clipboard.writeText($('plain').textContent).then(()=>{o.textContent='Copied.'},fail)}catch(e){fail()}});
 renderInputs();render();
